@@ -22,7 +22,7 @@ unsigned long modeEndTime;
 mode_func_t modes[] = {
   &userDefinedFade,
   &userDefinedCut,
-  &play,
+//  &play,
   &randDots,
   &fireflies,
   &swipes,
@@ -45,9 +45,9 @@ void setup() {
   base.buttonClickFunctions[1] = buttonTwo;
 
   changingMode = CHANGE_NOT;
-  curMode = -1;
+  curMode = 0;
   // XXX TEMP
-  curMode = 2;
+//  curMode = 4;
   modeEndTime = __UINT32_MAX__;
 
   base.fixClockTiming();
