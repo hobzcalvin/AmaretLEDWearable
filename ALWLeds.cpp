@@ -10,7 +10,7 @@
 #include <util/delay.h>
 
 #define PWM_CYCLE_TIME_uS 1000.0
-#define PWM_ON_FRACTION 0.2
+#define PWM_ON_FRACTION 0.3
 #define MAX_PWM_VALUE 63
 
 // Can't be a private member of ALWLeds since the ISR needs access to it
