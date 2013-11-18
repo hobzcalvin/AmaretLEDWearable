@@ -281,7 +281,6 @@ FrameData ALWLeds::loadFrame(const FrameData* f, byte* dest) {
   return frame;
 }
 
-#define FADE_FRAME_STEPS 63.0
 void ALWLeds::fadeFrames(const FrameData* from, const FrameData* to, delay_func_t delayFunction) {
   byte fromPwm[MAX_NUM_LEDS];
   byte toPwm[MAX_NUM_LEDS];
@@ -296,11 +295,16 @@ void ALWLeds::fadeFrames(const FrameData* from, const FrameData* to, delay_func_
   delayFunction(fromFrame.duration * 1.024);
 
   float stepSize[MAX_NUM_LEDS];
-  float stepTime = fromFrame.transTime / FADE_FRAME_STEPS;
-  for (byte i = 0; i < MAX_NUM_LEDS; i++) {
-    stepSize[i] = (float)((int)toPwm[i] - (int)fromPwm[i]) / FADE_FRAME_STEPS;
+  float numSteps = 63.0;
+  float stepTime = fromFrame.transTime / numSteps;
+  while (stepTime * 1.024 < 4) {
+    stepTime *= 2;
+    numSteps /= 2;
   }
-  for (float curStep = 1; curStep <= FADE_FRAME_STEPS; curStep++) {
+  for (byte i = 0; i < MAX_NUM_LEDS; i++) {
+    stepSize[i] = (float)((int)toPwm[i] - (int)fromPwm[i]) / numSteps;
+  }
+  for (float curStep = 1; curStep <= numSteps; curStep++) {
     for (byte i = 0; i < MAX_NUM_LEDS; i++) {
       pwmValues[i] = (float)fromPwm[i] + stepSize[i] * curStep;
     }
