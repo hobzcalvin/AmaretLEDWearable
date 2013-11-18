@@ -3,7 +3,7 @@
 #include <ALWBase.h>
 
 
-#define RANDOM_MODE_TIME_MS 10000UL
+#define RANDOM_MODE_TIME_MS 15000UL
 
 typedef void (*mode_func_t)(void);
 
@@ -23,7 +23,8 @@ mode_func_t modes[] = {
   &userDefinedFade,
   &userDefinedCut,
 //  &play,
-  &randDots,
+  &spin,
+//  &randDots,
   &fireflies,
   &swipes,
   &heart,
@@ -32,8 +33,6 @@ mode_func_t modes[] = {
   &fire,
   &colorWheel,
   &slowRainbow,
-//  &fastRainbow,
-//  &white,
 };
 #define NUM_MODES (sizeof(modes) / sizeof(mode_func_t))
 
@@ -47,7 +46,7 @@ void setup() {
   changingMode = CHANGE_NOT;
   curMode = 0;
   // XXX TEMP
-//  curMode = 4;
+//  curMode = 2;
   modeEndTime = __UINT32_MAX__;
 
   base.fixClockTiming();
@@ -75,18 +74,27 @@ void findTriState(byte ctrl, byte led) {
 
 void play() {
   while (!changingMode) {
-    int hue = random(MAX_HUE);
-    int sat = random(256);
-    for (int i = 0; i <= 255; i++) {
-      Color c = ALWLeds::hsv2rgb(hue, sat, i);
-      leds.fill(c, true);
-//      leds.setLedColor(NUM_LOGICAL_LEDS / 2, c, NULL, true);
-//      leds.setLedColor(NUM_LOGICAL_LEDS / 2 + 1, (i % 2) ? 0 : 0xFF);
-//      for (byte j = 0; j < NUM_LOGICAL_LEDS / 2; j++) {
-//        leds.setLedColor(j, c);
-//      }
+    leds.fill(0xff);
+    delay(3000);
+    leds.clear();
+    delay(3000);
+    continue;
 
+    leds.fill(0xff0000);
+    for (int i = 0; i < 5000; i++) {
+      modeDelay(1);
+    }
+    leds.clear();
+    for (int i = 0; i < 500; i++) {
       modeDelay(10);
+    }
+    leds.fill(0x00ff00);
+    for (int i = 0; i < 50; i++) {
+      modeDelay(100);
+    }
+    leds.clear();
+    for (int i = 0; i < 5; i++) {
+      modeDelay(1000);
     }
   }
 
@@ -204,6 +212,42 @@ void userDefinedCut() {
     FrameData frame = leds.loadFrame(&userPattern1.frames[i]);
     // Multiply by 1.024 because the clock runs fast by that factor.
     modeDelay((frame.duration + frame.transTime) * 1.024);
+  }
+}
+
+#define SPIN_MAX_SPEED 0.1
+#define SPIN_MIN_SPEED 0.0001
+void spin() {
+  uint16_t hue = random(MAX_HUE);
+  byte sat = random(256);
+  bool forward = true;
+  bool accelerating = true;
+  float speed = 0.01;
+  float speedStep = 0.0005;
+  float cur = 0;
+  while (!changingMode) {
+    for (byte i = 0; i < NUM_LOGICAL_LEDS; i++) {
+      float dist = fabs(cur - (float)i / (float)NUM_LOGICAL_LEDS);
+      if (dist > 0.5) {
+        dist = 1.0 - dist;
+      }
+      leds.setLedColor(pgm_read_byte(radialToLedIndex + i), ALWLeds::hsv2rgb(hue, sat, pow((1.0 - dist), 30) * 255), NULL, true);
+    }
+    modeDelay(10);
+    cur = cur + speed * (forward ? 1 : -1);
+    while (cur > 1) cur--;
+    while (cur < 0) cur++;
+    speed = speed + speedStep * (accelerating ? 1 : -1);
+    if (accelerating && speed > SPIN_MAX_SPEED) {
+      accelerating = false;
+      hue = random(MAX_HUE);
+      sat = 128 + random(128);
+    }
+    if (!accelerating && speed < SPIN_MIN_SPEED) {
+      accelerating = true;
+      forward = !forward;
+      speedStep = 0.00005 + random(101) / 100.0 * 0.0005;
+    }
   }
 }
 
@@ -347,22 +391,9 @@ void colorWheel() {
 }
 
 void slowRainbow() {
-  for (uint16_t hue = 0; hue < 1536 && !changingMode; hue+=1) {
-    leds.fill(ALWLeds::hsv2rgb(hue));
+  for (uint16_t hue = 0; hue <= MAX_HUE && !changingMode; hue+=1) {
+    leds.fill(ALWLeds::hsv2rgb((hue + 1024) % MAX_HUE));
     modeDelay(10);
   }
 }
-
-void fastRainbow() {
-  for (uint16_t hue = 0; hue < 1536 && !changingMode; hue+=4) {
-    leds.fill(ALWLeds::hsv2rgb(hue));
-    modeDelay(1);
-  }
-}
-
-void white() {
-  leds.fill(0xffffff);
-  modeDelay(1000);
-}
-
 
